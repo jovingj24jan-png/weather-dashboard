@@ -71,14 +71,24 @@ export default function App() {
   const installPrompt = useInstallPrompt();
 
   // Controlled auto-refresh: checked once a minute and when the tab becomes
-  // visible again; only fires if the data is 15 min old and nothing is loading.
-  const refreshState = useRef({});
-  refreshState.current = { fetchedAt: forecast?.fetchedAt, busy: status === 'loading' || refreshing, refresh };
+  // visible again; only fires if 15 min have passed since the last successful
+  // fetch AND since the last automatic attempt — so a failing API (e.g. HTTP
+  // 429) is retried every 15 min, not every minute.
+  const refreshState = useRef({ lastAttempt: 0 });
+  refreshState.current = {
+    ...refreshState.current,
+    fetchedAt: forecast?.fetchedAt,
+    busy: status === 'loading' || refreshing,
+    refresh,
+  };
   useEffect(() => {
     const maybeRefresh = () => {
-      const { fetchedAt, busy, refresh: doRefresh } = refreshState.current;
-      if (!fetchedAt || busy || document.visibilityState !== 'visible') return;
-      if (Date.now() - fetchedAt >= AUTO_REFRESH_MS) doRefresh();
+      const state = refreshState.current;
+      if (!state.fetchedAt || state.busy || document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - Math.max(state.fetchedAt, state.lastAttempt) < AUTO_REFRESH_MS) return;
+      state.lastAttempt = now;
+      state.refresh();
     };
     const id = setInterval(maybeRefresh, 60_000);
     document.addEventListener('visibilitychange', maybeRefresh);
