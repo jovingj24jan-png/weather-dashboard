@@ -53,6 +53,7 @@ export default function App() {
     phase,
     refreshing,
     error,
+    failedPlace,
     match,
     choices,
     searchByName,
@@ -78,7 +79,8 @@ export default function App() {
   refreshState.current = {
     ...refreshState.current,
     fetchedAt: forecast?.fetchedAt,
-    busy: status === 'loading' || refreshing,
+    // After a failed search the screen names the failed place; don't quietly swap that out.
+    busy: status === 'loading' || refreshing || !!failedPlace,
     refresh,
   };
   useEffect(() => {
@@ -166,6 +168,7 @@ export default function App() {
             favoritesFull={favs.isFull}
             onToggleFavorite={() => (isCurrentSaved ? favs.removeFavorite(location.id) : favs.addFavorite(location))}
             onChangeCity={openHistory}
+            previousWeather={!!failedPlace}
           />
         </div>
         <div className="area-forecast" key={`forecast-${placeKey}`}>

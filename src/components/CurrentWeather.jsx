@@ -15,6 +15,7 @@ export default function CurrentWeather({
   onChangeCity,
   onRefresh,
   refreshing,
+  previousWeather = false,
 }) {
   const { current, units, zone } = forecast;
   const condition = getWeatherCondition(current.weatherCode, time.isDay);
@@ -42,6 +43,7 @@ export default function CurrentWeather({
             </button>
           </h1>
           <p className="current-region">{placeLabel(location) || 'Current location'}</p>
+          {previousWeather && <p className="current-previous">Showing previous weather for {location.name}</p>}
           <p className="current-date">
             <LocalDate zone={zone} />
           </p>
@@ -65,7 +67,7 @@ export default function CurrentWeather({
       </p>
 
       <div className="current-hero" key={`${location.id}-${forecast.fetchedAt}`}>
-        <p className="eyebrow">Current</p>
+        <p className="eyebrow">{previousWeather ? 'Previous weather' : 'Current'}</p>
         <p className="current-temp" aria-label={`${Math.round(current.temperature)} ${units.temperature}`}>
           {formatTemp(current.temperature)}
           <span className="current-unit">{unit}</span>

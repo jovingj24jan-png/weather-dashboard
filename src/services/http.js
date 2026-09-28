@@ -14,10 +14,10 @@ export class WeatherError extends Error {
 export const ERROR_MESSAGES = {
   'not-found': "We couldn't find that location. Try another city.",
   api: 'Weather service is currently unavailable. Please try again.',
+  rateLimited: 'Weather service is temporarily rate-limited. Please try again later.',
   network: 'Unable to connect to the weather service. Check your internet connection.',
   malformed: 'The weather service sent an unexpected response. Please try again.',
   empty: 'Type a city name to search.',
-  stale: 'Unable to update weather. Showing last available weather.',
   searchUnavailable: 'Location search is currently unavailable. Please try again.',
   searchIncomplete: "Couldn't complete the location search because a search service didn't respond. Please try again.",
 };
@@ -61,7 +61,10 @@ export async function httpGet(url, { signal, timeoutMs = DEFAULT_TIMEOUT_MS } = 
   }
 
   if (!response.ok) {
-    throw new WeatherError('api', ERROR_MESSAGES.api, new Error(`HTTP ${response.status}`));
+    const rateLimited = response.status === 429;
+    const error = new WeatherError('api', rateLimited ? ERROR_MESSAGES.rateLimited : ERROR_MESSAGES.api, new Error(`HTTP ${response.status}`));
+    error.status = response.status;
+    throw error;
   }
 
   try {

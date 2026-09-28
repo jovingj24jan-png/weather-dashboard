@@ -2278,6 +2278,16 @@ h2 {
   opacity: 0.9;
 }
 
+.current-previous {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 190, 90, 0.25);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .updated-ago.is-stale {
   padding: 2px 8px;
   border-radius: 999px;

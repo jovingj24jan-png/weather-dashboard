@@ -30,6 +30,8 @@ export function useWeather(unit) {
   // A quiet refresh of the same place: data stays fully visible.
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  // A place whose weather failed to load while another place's weather stays on screen.
+  const [failedPlace, setFailedPlace] = useState(null);
   // Other geocoding matches for the last search ("Not the right place?").
   const [match, setMatch] = useState(null);
   // Several equally likely places for a search: the user picks one before any weather GET.
@@ -55,15 +57,17 @@ export function useWeather(unit) {
         setPhase(geocodes ? 'searching' : 'loading');
       }
 
+      let place = null;
       try {
         const {
-          place,
+          place: resolved,
           alternatives = [],
           renamedFrom = null,
           ambiguous = false,
           query,
         } = await resolveMatch(controller.signal);
         if (controller.signal.aborted) return;
+        place = resolved;
         // Ask instead of guessing — except on first load, where the dashboard needs something to show.
         if (ambiguous && hasForecastRef.current) {
           setChoices({ query, options: [place, ...alternatives] });
@@ -78,19 +82,22 @@ export function useWeather(unit) {
         const fetchedAt = Date.now();
         const data = { ...weather, airQuality: undefined, fetchedAt };
         const nextMatch = quiet ? matchRef.current : alternatives.length || renamedFrom ? { alternatives, renamedFrom } : null;
-        locationRef.current = place;
+        // OSM geocoders don't know the time zone; the forecast (timezone=auto) does.
+        const shownPlace = place.timezone ? place : { ...place, timezone: weather.zone.timeZone };
+        locationRef.current = shownPlace;
         matchRef.current = nextMatch;
-        setLocation(place);
+        setLocation(shownPlace);
+        setFailedPlace(null);
         setMatch(nextMatch);
         setForecast(data);
         hasForecastRef.current = true;
         setStatus('success');
-        writeStorage(STORAGE_KEYS.lastLocation, place);
+        writeStorage(STORAGE_KEYS.lastLocation, shownPlace);
 
         const airQuality = await airQualityRequest;
         if (controller.signal.aborted) return;
         setForecast((prev) => (prev?.fetchedAt === fetchedAt ? { ...prev, airQuality } : prev));
-        writeStorage(STORAGE_KEYS.lastWeather, { unit, location: place, forecast: { ...data, airQuality } });
+        writeStorage(STORAGE_KEYS.lastWeather, { unit, location: shownPlace, forecast: { ...data, airQuality } });
       } catch (err) {
         if (err.name === 'AbortError' || controller.signal.aborted) return;
         if (import.meta.env.DEV) console.warn('[weather] request failed:', err.kind ?? err.name, err.cause ?? err);
@@ -106,11 +113,23 @@ export function useWeather(unit) {
           setForecast({ ...snapshot.forecast, fromCache: true });
           hasForecastRef.current = true;
         }
-        // "Showing last available weather" only when the data on screen is for this same place.
-        const keepsData = couldNotUpdate && (quiet || usedSnapshot);
-        setError(
-          keepsData ? new WeatherError(weatherError.kind, ERROR_MESSAGES.stale, weatherError.cause) : weatherError,
-        );
+        // Whatever stays on screen is named explicitly, so an older place's weather is
+        // never mistaken for the place that was just requested.
+        const shown = hasForecastRef.current ? locationRef.current : null;
+        const samePlace = !!(shown && place && shown.id === place.id);
+        let message = weatherError.message;
+        if (place) {
+          const reason =
+            weatherError.status === 429 || weatherError.kind === 'network' || weatherError.kind === 'malformed'
+              ? ` ${weatherError.message}`
+              : '';
+          message = `Unable to ${samePlace ? 'update' : 'load'} weather for ${place.name}.${reason}`;
+          if (shown) message += ` Showing ${samePlace ? 'last available' : 'previous'} weather for ${shown.name}.`;
+        }
+        const shownError = new WeatherError(weatherError.kind, message, weatherError.cause);
+        shownError.status = weatherError.status;
+        setError(shownError);
+        setFailedPlace(shown && place && !samePlace ? place : null);
         setStatus('error');
       } finally {
         if (controllerRef.current === controller) setRefreshing(false);
@@ -182,6 +201,7 @@ export function useWeather(unit) {
     phase,
     refreshing,
     error,
+    failedPlace,
     match,
     choices,
     searchByName,
