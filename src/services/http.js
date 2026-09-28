@@ -12,11 +12,12 @@ export class WeatherError extends Error {
 }
 
 export const ERROR_MESSAGES = {
-  'not-found': 'City not found. Try searching for another city.',
+  'not-found': "We couldn't find that location. Try another city.",
   api: 'Weather service is currently unavailable. Please try again.',
   network: 'Unable to connect to the weather service. Check your internet connection.',
   malformed: 'The weather service sent an unexpected response. Please try again.',
   empty: 'Type a city name to search.',
+  stale: 'Unable to update weather. Showing last available weather.',
   searchUnavailable: 'Location search is currently unavailable. Please try again.',
   searchIncomplete: "Couldn't complete the location search because a search service didn't respond. Please try again.",
 };

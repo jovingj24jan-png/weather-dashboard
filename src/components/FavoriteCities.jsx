@@ -1,5 +1,5 @@
 import { Icon, WeatherIcon } from './Icons.jsx';
-import { getWeatherInfo } from '../utils/weatherCodes.js';
+import { getWeatherCondition } from '../utils/weatherCodes.js';
 import { formatTemp } from '../utils/format.js';
 
 export default function FavoriteCities({
@@ -31,7 +31,7 @@ export default function FavoriteCities({
       <ul className="fav-list">
         {favorites.map((fav) => {
           const cond = conditions[fav.id];
-          const info = cond ? getWeatherInfo(cond.weatherCode) : null;
+          const info = cond ? getWeatherCondition(cond.weatherCode, cond.isDay) : null;
           const pending = !cond && status === 'loading';
           const active = activeId === fav.id;
           const opening = pendingId === fav.id;

@@ -6,6 +6,8 @@ import FavoriteCities from './components/FavoriteCities.jsx';
 import LocationMap from './components/LocationMap.jsx';
 import Forecast from './components/Forecast.jsx';
 import WeatherOverview from './components/WeatherOverview.jsx';
+import DetailsSection from './components/DetailsSection.jsx';
+import Atmosphere from './components/Atmosphere.jsx';
 import LoadingState from './components/LoadingState.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
@@ -17,8 +19,13 @@ import { useWeather } from './hooks/useWeather.js';
 import { useFavorites } from './hooks/useFavorites.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useNearbyWeather } from './hooks/useNearbyWeather.js';
+import { useLocalTime } from './hooks/useLocalTime.js';
+import { getWeatherCondition } from './utils/weatherCodes.js';
 import { STORAGE_KEYS } from './config.js';
 import { readStorage, writeStorage } from './utils/storage.js';
+
+// Weather is refreshed when it is this old and the tab is visible — never on a tight loop.
+const AUTO_REFRESH_MS = 15 * 60 * 1000;
 
 function usePersistentState(key, fallback, allowed) {
   const [value, setValue] = useState(() => {
@@ -42,11 +49,14 @@ export default function App() {
     location,
     forecast,
     status,
+    phase,
+    refreshing,
     error,
     match,
     choices,
     searchByName,
     loadPlace,
+    refresh,
     chooseAlternative,
     chooseLocation,
     dismissChoices,
@@ -56,6 +66,25 @@ export default function App() {
   const favs = useFavorites(unit);
   const { history, record: recordHistory, clear: clearHistory } = useHistory();
   const nearby = useNearbyWeather(location, unit);
+  const time = useLocalTime(forecast);
+
+  // Controlled auto-refresh: checked once a minute and when the tab becomes
+  // visible again; only fires if the data is 15 min old and nothing is loading.
+  const refreshState = useRef({});
+  refreshState.current = { fetchedAt: forecast?.fetchedAt, busy: status === 'loading' || refreshing, refresh };
+  useEffect(() => {
+    const maybeRefresh = () => {
+      const { fetchedAt, busy, refresh: doRefresh } = refreshState.current;
+      if (!fetchedAt || busy || document.visibilityState !== 'visible') return;
+      if (Date.now() - fetchedAt >= AUTO_REFRESH_MS) doRefresh();
+    };
+    const id = setInterval(maybeRefresh, 60_000);
+    document.addEventListener('visibilitychange', maybeRefresh);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', maybeRefresh);
+    };
+  }, []);
 
   useEffect(() => {
     if (location) recordHistory(location);
@@ -77,7 +106,9 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  useEffect(() => setDayIndex(0), [forecast]);
+  // A new forecast starts on the location's own "today".
+  const todayIndex = time?.todayIndex ?? 0;
+  useEffect(() => setDayIndex(todayIndex), [forecast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const focusSearch = useCallback(() => {
     searchRef.current?.focus();
@@ -103,32 +134,39 @@ export default function App() {
   const loading = status === 'loading';
   const hasData = !!(location && forecast);
   const isCurrentSaved = favs.isFavorite(location);
-  const mode = hasData ? 'data' : status === 'error' && error ? 'error' : 'loading';
+  const mode = hasData && time ? 'data' : status === 'error' && error ? 'error' : 'loading';
+  const condition = mode === 'data' ? getWeatherCondition(forecast.current.weatherCode, time.isDay) : null;
+  // Cards re-mount (and fade in) when the location changes, not on every refresh.
+  const placeKey = location?.id ?? 'none';
 
   let content;
   if (mode === 'data') {
     content = (
       <>
-        <div className="area-current">
+        <div className="area-current" key={`current-${placeKey}`}>
           <CurrentWeather
             location={location}
             forecast={forecast}
+            time={time}
+            onRefresh={refresh}
+            refreshing={refreshing}
             isFavorite={isCurrentSaved}
             favoritesFull={favs.isFull}
             onToggleFavorite={() => (isCurrentSaved ? favs.removeFavorite(location.id) : favs.addFavorite(location))}
             onChangeCity={openHistory}
           />
         </div>
-        <div className="area-forecast">
+        <div className="area-forecast" key={`forecast-${placeKey}`}>
           <Forecast
             daily={forecast.daily}
+            todayDate={time.today.date}
             windUnit={forecast.units.wind}
             selectedIndex={dayIndex}
             onSelect={setDayIndex}
           />
         </div>
-        <div className="area-map">
-          <LocationMap location={location} forecast={forecast} nearby={nearby} />
+        <div className="area-map" key={`map-${placeKey}`}>
+          <LocationMap location={location} forecast={forecast} nearby={nearby} isDay={time.isDay} />
         </div>
         <div className="area-favs">
           <FavoriteCities
@@ -146,8 +184,11 @@ export default function App() {
             onFocusSearch={focusSearch}
           />
         </div>
-        <div className="area-overview">
-          <WeatherOverview forecast={forecast} dayIndex={dayIndex} onSelectDay={setDayIndex} />
+        <div className="area-overview" key={`overview-${placeKey}`}>
+          <WeatherOverview forecast={forecast} time={time} dayIndex={dayIndex} onSelectDay={setDayIndex} />
+        </div>
+        <div className="area-details" key={`details-${placeKey}`}>
+          <DetailsSection forecast={forecast} time={time} />
         </div>
       </>
     );
@@ -167,6 +208,7 @@ export default function App() {
         Skip to content
       </a>
       <WeatherIconDefs />
+      {condition && <Atmosphere atmosphere={condition.atmosphere} period={time.period} />}
       <Sidebar active={activeNav} onNavigate={navigate} onOpenSettings={openSettings} />
       <main className="main" id="main" tabIndex={-1}>
         <div className={`board is-${mode} ${loading && hasData ? 'is-refreshing' : ''}`} aria-busy={loading}>
@@ -179,6 +221,8 @@ export default function App() {
             onDismissChoices={dismissChoices}
             theme={theme}
             onThemeChange={setTheme}
+            unit={unit}
+            onUnitChange={setUnit}
             location={location}
             forecast={forecast}
             onOpenSettings={openSettings}
@@ -193,7 +237,8 @@ export default function App() {
         <div className="toast-region" role="status" aria-live="polite">
           {loading && hasData && (
             <span className="loading-pill">
-              <span className="spinner" aria-hidden="true" /> Loading weather...
+              <span className="spinner" aria-hidden="true" />{' '}
+              {phase === 'searching' ? 'Searching weather...' : 'Loading weather...'}
             </span>
           )}
         </div>

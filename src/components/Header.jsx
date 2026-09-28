@@ -29,6 +29,8 @@ const Header = forwardRef(function Header(
     onDismissChoices,
     theme,
     onThemeChange,
+    unit,
+    onUnitChange,
     location,
     forecast,
     onOpenSettings,
@@ -45,7 +47,7 @@ const Header = forwardRef(function Header(
         <span className="header-logo" aria-hidden="true">
           <Icon name="logo" size={20} />
         </span>
-        <span>Weather</span>
+        <span className="header-brand-text">Weather</span>
       </div>
       <SearchBar
         ref={searchRef}
@@ -56,6 +58,16 @@ const Header = forwardRef(function Header(
         onDismissChoices={onDismissChoices}
       />
       <div className="header-controls">
+        <div className="unit-toggle" role="group" aria-label="Temperature unit">
+          <button type="button" aria-pressed={unit === 'celsius'} onClick={() => onUnitChange('celsius')}>
+            <span aria-hidden="true">°C</span>
+            <span className="sr-only">Celsius</span>
+          </button>
+          <button type="button" aria-pressed={unit === 'fahrenheit'} onClick={() => onUnitChange('fahrenheit')}>
+            <span aria-hidden="true">°F</span>
+            <span className="sr-only">Fahrenheit</span>
+          </button>
+        </div>
         <div className="theme-toggle" role="group" aria-label="Color theme">
           <button
             type="button"

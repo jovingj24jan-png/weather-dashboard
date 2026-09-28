@@ -14,6 +14,8 @@ export const MAX_HISTORY = 8;
 export const STORAGE_KEYS = {
   favorites: 'weather.favorites',
   history: 'weather.history',
+  // Last successful weather, only used (and labelled) when the service can't be reached.
+  lastWeather: 'weather.lastWeather',
   lastLocation: 'weather.lastLocation',
   unit: 'weather.unit',
   theme: 'weather.theme',

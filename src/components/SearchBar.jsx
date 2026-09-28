@@ -79,6 +79,19 @@ const SearchBar = forwardRef(function SearchBar({ onSearch, loading, choices, on
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
+      {query && (
+        <button
+          type="button"
+          className="search-clear"
+          aria-label="Clear search"
+          onClick={() => {
+            setQuery('');
+            inputRef.current?.focus();
+          }}
+        >
+          <Icon name="close" size={14} />
+        </button>
+      )}
       <button type="submit" className="search-submit" aria-label="Search weather for this city">
         {loading ? <span className="spinner" aria-hidden="true" /> : <Icon name="search" size={16} />}
       </button>

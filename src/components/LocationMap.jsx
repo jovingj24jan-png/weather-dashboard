@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon, WeatherIcon } from './Icons.jsx';
-import { getWeatherInfo } from '../utils/weatherCodes.js';
+import { getWeatherCondition } from '../utils/weatherCodes.js';
 import { formatClock, formatTemp, placeLabel } from '../utils/format.js';
 import { project, TILE_SIZE } from '../utils/mapProjection.js';
 import { NEARBY_ZOOM } from '../hooks/useNearbyWeather.js';
@@ -24,7 +24,7 @@ function useBaseZoom() {
   return narrow ? NEARBY_ZOOM - 1 : NEARBY_ZOOM;
 }
 
-export default function LocationMap({ location, forecast, nearby }) {
+export default function LocationMap({ location, forecast, nearby, isDay }) {
   const baseZoom = useBaseZoom();
   const [zoom, setZoom] = useState(baseZoom);
   const [showNearby, setShowNearby] = useState(true);
@@ -53,12 +53,12 @@ export default function LocationMap({ location, forecast, nearby }) {
   const markers = showNearby
     ? nearby.map((p) => {
         const pos = project(p.latitude, p.longitude, zoom);
-        return { ...p, left: pos.x - center.x, top: pos.y - center.y, info: getWeatherInfo(p.weatherCode) };
+        return { ...p, left: pos.x - center.x, top: pos.y - center.y, info: getWeatherCondition(p.weatherCode, p.isDay) };
       })
     : [];
 
   const { current, daily } = forecast;
-  const info = getWeatherInfo(current.weatherCode);
+  const info = getWeatherCondition(current.weatherCode, isDay);
   const osmUrl = `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=${zoom}/${location.latitude}/${location.longitude}`;
 
   return (

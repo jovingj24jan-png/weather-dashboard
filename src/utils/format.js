@@ -26,7 +26,6 @@ const weekdayLong = fmt({ weekday: 'long' });
 const weekdayShort = fmt({ weekday: 'short' });
 const hourFmt = fmt({ hour: 'numeric' });
 const timeFmt = fmt({ hour: 'numeric', minute: '2-digit' });
-const fullDateFmt = fmt({ weekday: 'long', day: 'numeric', month: 'short' });
 const monthDayFmt = fmt({ month: 'short', day: 'numeric' });
 
 export const formatWeekday = (isoDate, short = false) =>
@@ -35,17 +34,6 @@ export const formatMonthDay = (isoDate) => monthDayFmt.format(parseLocal(isoDate
 export const formatHour = (isoLocal) => hourFmt.format(parseLocal(isoLocal));
 export const formatClock = (isoLocal) => timeFmt.format(parseLocal(isoLocal));
 
-// "Now" in the selected city's timezone, as a UTC-based Date for the formatters above.
-export const cityNow = (utcOffsetSeconds) => new Date(Date.now() + utcOffsetSeconds * 1000);
-const shortDateFmt = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'UTC',
-  day: '2-digit',
-  month: 'short',
-  year: '2-digit',
-});
-export const formatCityDate = (date) => fullDateFmt.format(date);
-export const formatShortDate = (date) => shortDateFmt.format(date);
-export const formatCityTime = (date) => timeFmt.format(date);
 
 export function placeLabel(place) {
   if (!place) return '';
@@ -57,4 +45,18 @@ export function placeDetail(place) {
   if (!place) return '';
   const where = [place.area !== place.region ? place.area : '', placeLabel(place)].filter(Boolean).join(', ');
   return [place.kind, where].filter(Boolean).join(' · ');
+}
+
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const COMPASS_NAMES = { N: 'north', E: 'east', S: 'south', W: 'west' };
+
+// Meteorological direction (where the wind comes FROM) → "SW" and "from the south-west".
+export function getWindDirection(degrees) {
+  if (!isNum(degrees)) return null;
+  const point = COMPASS[Math.round((((degrees % 360) + 360) % 360) / 22.5) % 16];
+  const spoken = point
+    .split('')
+    .map((c) => COMPASS_NAMES[c])
+    .join('-');
+  return { point, degrees, spoken: `from the ${spoken}` };
 }

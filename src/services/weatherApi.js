@@ -11,6 +11,10 @@ const CURRENT_FIELDS = [
   'wind_speed_10m',
   'visibility',
   'is_day',
+  'wind_direction_10m',
+  'wind_gusts_10m',
+  'pressure_msl',
+  'uv_index',
 ];
 const DAILY_FIELDS = [
   'weather_code',
@@ -22,8 +26,19 @@ const DAILY_FIELDS = [
   'wind_speed_10m_max',
   'sunrise',
   'sunset',
+  'uv_index_max',
 ];
-const HOURLY_FIELDS = ['temperature_2m', 'relative_humidity_2m', 'precipitation', 'weather_code'];
+const HOURLY_FIELDS = [
+  'temperature_2m',
+  'apparent_temperature',
+  'relative_humidity_2m',
+  'precipitation',
+  'precipitation_probability',
+  'weather_code',
+  'is_day',
+  'wind_speed_10m',
+  'wind_gusts_10m',
+];
 
 const unitParams = (unit) => (unit === 'fahrenheit' ? { temperature_unit: 'fahrenheit' } : {});
 
@@ -82,9 +97,14 @@ export async function getWeather({ latitude, longitude }, { unit = 'celsius', si
   const { current, daily, hourly } = data;
   const unitLabel = (value, fallback) => (typeof value === 'string' && value ? value : fallback);
   const dateOrNull = (value) => (isDateString(value) ? value : null);
+  const num = (value) => (isFiniteNumber(value) ? value : null);
+  const flag = (value) => (value === 0 || value === 1 ? value === 1 : null);
   return {
-    timezone: data.timezone,
-    utcOffsetSeconds: data.utc_offset_seconds,
+    // The location's own clock: IANA zone name (e.g. "Europe/London") + offset fallback.
+    zone: {
+      timeZone: typeof data.timezone === 'string' ? data.timezone : '',
+      utcOffsetSeconds: data.utc_offset_seconds,
+    },
     units: {
       temperature: unitLabel(data.current_units?.temperature_2m, unit === 'fahrenheit' ? '°F' : '°C'),
       wind: unitLabel(data.current_units?.wind_speed_10m, 'km/h'),
@@ -98,6 +118,10 @@ export async function getWeather({ latitude, longitude }, { unit = 'celsius', si
       precipitation: current.precipitation,
       weatherCode: current.weather_code,
       windSpeed: current.wind_speed_10m,
+      windDirection: num(current.wind_direction_10m),
+      windGusts: num(current.wind_gusts_10m),
+      pressure: num(current.pressure_msl),
+      uvIndex: num(current.uv_index),
       visibility: current.visibility,
       isDay: current.is_day !== 0,
     },
@@ -112,13 +136,19 @@ export async function getWeather({ latitude, longitude }, { unit = 'celsius', si
       windMax: daily.wind_speed_10m_max?.[i] ?? null,
       sunrise: dateOrNull(daily.sunrise?.[i]),
       sunset: dateOrNull(daily.sunset?.[i]),
+      uvIndexMax: num(daily.uv_index_max?.[i]),
     })),
     hourly: hourly.time.map((time, i) => ({
       time,
       temperature: hourly.temperature_2m[i],
-      humidity: hourly.relative_humidity_2m?.[i] ?? null,
-      precipitation: hourly.precipitation?.[i] ?? null,
-      weatherCode: hourly.weather_code?.[i] ?? null,
+      apparentTemperature: num(hourly.apparent_temperature?.[i]),
+      humidity: num(hourly.relative_humidity_2m?.[i]),
+      precipitation: num(hourly.precipitation?.[i]),
+      precipitationProbability: num(hourly.precipitation_probability?.[i]),
+      weatherCode: num(hourly.weather_code?.[i]),
+      isDay: flag(hourly.is_day?.[i]),
+      windSpeed: num(hourly.wind_speed_10m?.[i]),
+      windGusts: num(hourly.wind_gusts_10m?.[i]),
     })),
   };
 }

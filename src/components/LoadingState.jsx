@@ -43,8 +43,24 @@ export default function LoadingState() {
       </div>
       <div className="area-overview">
         <div className="card skeleton-card overview">
+          <Bar w="18%" h={16} />
+          <div className="skeleton-hours">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Bar key={i} h={104} style={{ borderRadius: 14 }} />
+            ))}
+          </div>
           <Bar w="20%" h={18} />
-          <Bar h={240} style={{ borderRadius: 14 }} />
+          <Bar h={220} style={{ borderRadius: 14 }} />
+        </div>
+      </div>
+      <div className="area-details">
+        <div className="details-row">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card skeleton-card">
+              <Bar w="40%" h={18} />
+              <Bar h={120} style={{ borderRadius: 14 }} />
+            </div>
+          ))}
         </div>
       </div>
     </>

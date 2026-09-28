@@ -73,6 +73,7 @@ const PATHS = {
     </>
   ),
   chevronDown: <path d="m6 9 6 6 6-6" />,
+  arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
   minus: <path d="M5 12h14" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   wind: <path d="M3 8.5h10.5a2.5 2.5 0 1 0-2.5-2.5M3 12.5h15.5a2.5 2.5 0 1 1-2.5 2.5M3 16.5h8" />,
@@ -115,10 +116,11 @@ const PATHS = {
   ),
 };
 
-export function Icon({ name, size = 20, className = '', filled = false, strokeWidth = 1.8 }) {
+export function Icon({ name, size = 20, className = '', filled = false, strokeWidth = 1.8, style }) {
   return (
     <svg
       className={`icon ${className}`}
+      style={style}
       width={size}
       height={size}
       viewBox="0 0 24 24"

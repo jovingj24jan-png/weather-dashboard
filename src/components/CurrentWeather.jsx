@@ -1,46 +1,39 @@
 import { Icon, WeatherIcon } from './Icons.jsx';
-import { getWeatherInfo } from '../utils/weatherCodes.js';
-import { useCityClock } from '../hooks/useCityClock.js';
-import {
-  formatCityDate,
-  formatCityTime,
-  formatPercent,
-  formatPrecip,
-  formatShortDate,
-  formatTemp,
-  formatVisibility,
-  formatWind,
-  placeLabel,
-} from '../utils/format.js';
+import LocalClock from './LocalClock.jsx';
+import UpdatedAgo from './UpdatedAgo.jsx';
+import { getWeatherCondition } from '../utils/weatherCodes.js';
+import { formatPercent, formatTemp, formatWind, placeLabel } from '../utils/format.js';
+import { formatLocalDate } from '../utils/time.js';
+import { buildSummary } from '../utils/summary.js';
 
 export default function CurrentWeather({
   location,
   forecast,
+  time,
   isFavorite,
   onToggleFavorite,
   favoritesFull,
   onChangeCity,
+  onRefresh,
+  refreshing,
 }) {
-  const { current, units, utcOffsetSeconds } = forecast;
-  const info = getWeatherInfo(current.weatherCode);
-  const now = useCityClock(utcOffsetSeconds);
+  const { current, units, zone } = forecast;
+  const condition = getWeatherCondition(current.weatherCode, time.isDay);
+  const today = time.today;
+  const summary = buildSummary(forecast, time);
   const canAdd = isFavorite || !favoritesFull;
+  const unit = units.temperature.replace('°', '');
 
   const stats = [
     { icon: 'wind', label: 'Wind', value: formatWind(current.windSpeed, units.wind) },
     { icon: 'droplet', label: 'Humidity', value: formatPercent(current.humidity) },
-    { icon: 'eye', label: 'Visibility', value: formatVisibility(current.visibility) },
+    { icon: 'umbrella', label: 'Rain today', value: formatPercent(today.precipitationProbability) },
   ];
 
   return (
-    <section className="card current" aria-labelledby="current-title">
+    <section className={`card current period-${time.period}`} aria-labelledby="current-title">
       <div className="current-top">
         <div className="current-place">
-          <p className="current-date">
-            <time aria-label={`${formatCityDate(now)}, ${formatCityTime(now)} local time`}>
-              Today, {formatShortDate(now)} · {formatCityTime(now)}
-            </time>
-          </p>
           <h1 id="current-title" className="current-city">
             <button type="button" className="city-switch" aria-haspopup="dialog" onClick={onChangeCity}>
               <Icon name="pin" size={16} strokeWidth={2.2} />
@@ -50,6 +43,7 @@ export default function CurrentWeather({
             </button>
           </h1>
           <p className="current-region">{placeLabel(location) || 'Current location'}</p>
+          <p className="current-date">{formatLocalDate(new Date(time.now), zone)}</p>
         </div>
         <button
           type="button"
@@ -64,18 +58,42 @@ export default function CurrentWeather({
         </button>
       </div>
 
-      <div className="current-hero">
-        <p className="current-cond">{info.label}</p>
+      <p className="current-clock">
+        <span className="eyebrow">Local time</span>
+        <LocalClock zone={zone} />
+      </p>
+
+      <div className="current-hero" key={`${location.id}-${forecast.fetchedAt}`}>
+        <p className="eyebrow">Current</p>
         <p className="current-temp" aria-label={`${Math.round(current.temperature)} ${units.temperature}`}>
           {formatTemp(current.temperature)}
-          <span className="current-unit">{units.temperature.replace('°', '')}</span>
+          <span className="current-unit">{unit}</span>
         </p>
-        <WeatherIcon icon={info.icon} isDay={current.isDay} size={132} className="current-icon" />
+        <WeatherIcon
+          icon={condition.icon}
+          isDay={time.isDay}
+          size={128}
+          label={condition.ariaLabel}
+          className="current-icon"
+        />
+        <p className="current-cond">{condition.label}</p>
         <p className="current-feels">
-          Feels like {formatTemp(current.apparentTemperature)} · Precip{' '}
-          {formatPrecip(current.precipitation, units.precipitation)}
+          <span>Feels like {formatTemp(current.apparentTemperature)}</span>
+          <span aria-label={`High ${Math.round(today.max)}, low ${Math.round(today.min)}`}>
+            H {formatTemp(today.max)} <span aria-hidden="true">·</span> L {formatTemp(today.min)}
+          </span>
         </p>
       </div>
+
+      {summary.length > 0 && (
+        <ul className="current-summary" aria-label="Outlook">
+          {summary.map((s) => (
+            <li key={s.text}>
+              <span aria-hidden="true">{s.emoji}</span> {s.text}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <dl className="current-stats">
         {stats.map((s) => (
@@ -86,6 +104,19 @@ export default function CurrentWeather({
           </div>
         ))}
       </dl>
+
+      <div className="current-foot">
+        <UpdatedAgo timestamp={forecast.fetchedAt} zone={zone} fromCache={forecast.fromCache} />
+        <button
+          type="button"
+          className={`refresh-btn ${refreshing ? 'is-refreshing' : ''}`}
+          onClick={onRefresh}
+          disabled={refreshing}
+          aria-label={refreshing ? 'Refreshing weather' : 'Refresh weather'}
+        >
+          <Icon name="refresh" size={16} />
+        </button>
+      </div>
     </section>
   );
 }

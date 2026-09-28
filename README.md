@@ -57,6 +57,24 @@ Saved cities use one more GET to the same forecast endpoint, passing all their
 coordinates at once (`latitude=40.7,51.5&longitude=-74,-0.12`), so the whole
 list refreshes in a single request.
 
+### Time zones, clock and freshness
+
+- Every time on screen is the **selected location's** local time. Open-Meteo is
+  called with `timezone=auto` and returns the place's IANA zone (e.g.
+  `Europe/London`); the clock, date, "now" hour, day/night and sunrise/sunset
+  logic all use that zone via `Intl` (`src/utils/time.js`), never the browser's
+  zone, so daylight-saving changes are handled.
+- The clock ticks every second in its own small component; nothing else
+  re-renders and no request is made.
+- Weather is **not** live sensor data: the card says "Updated N min ago" (when
+  this browser received it). The refresh button re-fetches the same
+  coordinates; an automatic refresh runs only when the data is 15 minutes old
+  and the tab is visible.
+- If the service can't be reached, the last weather this browser received is
+  shown with a clear "Last available" label, never as current.
+- Air quality comes from the Open-Meteo Air Quality API (US AQI, PM2.5, PM10,
+  NO₂, O₃); if it's unavailable the card says so instead of showing numbers.
+
 ### Finding the right place
 
 Open-Meteo's geocoder only matches the *start* of names in its own index, so a
@@ -133,14 +151,18 @@ src/
 │   ├── nominatimApi.js  OpenStreetMap Nominatim search
 │   ├── photonApi.js     Photon (OpenStreetMap) search, used when Nominatim fails or is slow
 │   ├── osmPlaces.js     shared OpenStreetMap place types and ids
-│   └── weatherApi.js    getWeather(), getCurrentWeatherForMany()
+│   ├── weatherApi.js    getWeather(), getCurrentWeatherForMany()
+│   └── airQualityApi.js getAirQuality(), AQI categories
 ├── hooks/             React state
 │   ├── useWeather.js    selected city + forecast + loading/error
 │   ├── useFavorites.js  saved cities (localStorage) + their live temps
 │   ├── useHistory.js    recently viewed cities (localStorage)
-│   └── useCityClock.js  local time in the selected city
+│   ├── useLocalTime.js  the location's "now", today, day/night, current hour
+│   └── useNow.js        small ticking clock hook
 ├── utils/
-│   ├── weatherCodes.js  WMO weather code → label + icon (used everywhere)
+│   ├── weatherCodes.js  WMO code → condition (label, icon, emoji, atmosphere) — one table
+│   ├── time.js          location-zone clock, dates, day/night period, "updated ago"
+│   ├── summary.js       rule-based outlook sentences from forecast data
 │   ├── placeRanking.js  generic ranking/merging of geocoder results
 │   ├── format.js        number/date formatting
 │   └── storage.js       safe localStorage access
