@@ -1,0 +1,5 @@
+node_modules
+dist
+.kilo/
+# Design reference mockup (third-party template image), kept local only
+pdf.jpg
