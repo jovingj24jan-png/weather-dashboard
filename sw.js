@@ -10,15 +10,15 @@
  *     it can never make forecasts stale; when offline, the app shows its own
  *     last-received snapshot, clearly labelled "Last available".
  */
-const VERSION = 'f06da03f19c6';
+const VERSION = '9c867f4425fb';
 const PRECACHE = [
   "./",
-  "assets/poppins-latin-500-normal-C8OXljZJ.woff2",
-  "assets/poppins-latin-400-normal-cpxAROuN.woff2",
   "assets/poppins-latin-600-normal-zEkxB9Mr.woff2",
   "assets/poppins-latin-700-normal-Qrb0O0WB.woff2",
-  "assets/index-WR2MdSph.css",
-  "assets/index-CMwY1L9Y.js",
+  "assets/poppins-latin-500-normal-C8OXljZJ.woff2",
+  "assets/poppins-latin-400-normal-cpxAROuN.woff2",
+  "assets/index-Rs-AhaEs.css",
+  "assets/index-DkMDrNYX.js",
   "favicon.svg",
   "icons/apple-touch-icon.png",
   "icons/icon-192.png",
