@@ -1,9 +1,8 @@
 import { Icon, WeatherIcon } from './Icons.jsx';
-import LocalClock from './LocalClock.jsx';
+import LocalClock, { LocalDate } from './LocalClock.jsx';
 import UpdatedAgo from './UpdatedAgo.jsx';
 import { getWeatherCondition } from '../utils/weatherCodes.js';
 import { formatPercent, formatTemp, formatWind, placeLabel } from '../utils/format.js';
-import { formatLocalDate } from '../utils/time.js';
 import { buildSummary } from '../utils/summary.js';
 
 export default function CurrentWeather({
@@ -43,7 +42,9 @@ export default function CurrentWeather({
             </button>
           </h1>
           <p className="current-region">{placeLabel(location) || 'Current location'}</p>
-          <p className="current-date">{formatLocalDate(new Date(time.now), zone)}</p>
+          <p className="current-date">
+            <LocalDate zone={zone} />
+          </p>
         </div>
         <button
           type="button"

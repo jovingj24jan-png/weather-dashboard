@@ -75,6 +75,21 @@ list refreshes in a single request.
 - Air quality comes from the Open-Meteo Air Quality API (US AQI, PM2.5, PM10,
   NO₂, O₃); if it's unavailable the card says so instead of showing numbers.
 
+### Installable app (PWA)
+
+- `public/manifest.webmanifest` (name, icons, `display: standalone`) with
+  relative `start_url`/`scope`, so they resolve to `/weather-dashboard/` on
+  GitHub Pages; icons live in `public/icons/` (192, 512, maskable 512).
+- `pwa/service-worker.template.js` is turned into `dist/sw.js` at build time by
+  a small plugin in `vite.config.js`, with the exact list of built files.
+  Pages are network-first (online users always get the latest deployment),
+  hashed assets cache-first, and **weather/geocoding/air-quality APIs and map
+  tiles are never cached by the worker**.
+- Registered only in production builds at `BASE_URL + 'sw.js'`
+  (`/weather-dashboard/sw.js`, scope `/weather-dashboard/`).
+- An "Install app" button appears only after Chrome fires
+  `beforeinstallprompt`, i.e. when installation is actually possible.
+
 ### Finding the right place
 
 Open-Meteo's geocoder only matches the *start* of names in its own index, so a

@@ -20,6 +20,7 @@ import { useFavorites } from './hooks/useFavorites.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useNearbyWeather } from './hooks/useNearbyWeather.js';
 import { useLocalTime } from './hooks/useLocalTime.js';
+import { useInstallPrompt } from './hooks/useInstallPrompt.js';
 import { getWeatherCondition } from './utils/weatherCodes.js';
 import { STORAGE_KEYS } from './config.js';
 import { readStorage, writeStorage } from './utils/storage.js';
@@ -67,6 +68,7 @@ export default function App() {
   const { history, record: recordHistory, clear: clearHistory } = useHistory();
   const nearby = useNearbyWeather(location, unit);
   const time = useLocalTime(forecast);
+  const installPrompt = useInstallPrompt();
 
   // Controlled auto-refresh: checked once a minute and when the tab becomes
   // visible again; only fires if the data is 15 min old and nothing is loading.
@@ -223,6 +225,8 @@ export default function App() {
             onThemeChange={setTheme}
             unit={unit}
             onUnitChange={setUnit}
+            canInstall={installPrompt.canInstall}
+            onInstall={installPrompt.install}
             location={location}
             forecast={forecast}
             onOpenSettings={openSettings}

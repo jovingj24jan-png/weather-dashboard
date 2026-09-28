@@ -2743,6 +2743,43 @@ h2 {
 
 /* ============ Header: unit toggle + search clear ============ */
 
+.install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fade-in 0.4s ease both;
+  transition: background-color 0.2s;
+}
+
+.install-btn:hover {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+@media (max-width: 519px) {
+  .install-btn {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .install-btn-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+
 .unit-toggle {
   display: flex;
   padding: 3px;

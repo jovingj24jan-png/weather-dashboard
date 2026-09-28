@@ -32,9 +32,16 @@ function formatter(options) {
   return formatterCache.get(key);
 }
 
+// Always 12-hour ("8:15 PM"), in the location's zone — never the browser's.
 export function formatLocalTime(date, zone, { seconds = false } = {}) {
   const z = zoned(date, zone);
-  return formatter({ timeZone: z.timeZone, hour: 'numeric', minute: '2-digit', ...(seconds && { second: '2-digit' }) }).format(z.date);
+  return formatter({
+    timeZone: z.timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    ...(seconds && { second: '2-digit' }),
+  }).format(z.date);
 }
 
 export function formatLocalDate(date, zone) {

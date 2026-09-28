@@ -31,6 +31,8 @@ const Header = forwardRef(function Header(
     onThemeChange,
     unit,
     onUnitChange,
+    canInstall,
+    onInstall,
     location,
     forecast,
     onOpenSettings,
@@ -58,6 +60,13 @@ const Header = forwardRef(function Header(
         onDismissChoices={onDismissChoices}
       />
       <div className="header-controls">
+        {canInstall && (
+          <button type="button" className="install-btn" onClick={onInstall}>
+            <Icon name="download" size={16} />
+            <span className="install-btn-text">Install app</span>
+            <span className="sr-only"> (Weather Dashboard)</span>
+          </button>
+        )}
         <div className="unit-toggle" role="group" aria-label="Temperature unit">
           <button type="button" aria-pressed={unit === 'celsius'} onClick={() => onUnitChange('celsius')}>
             <span aria-hidden="true">°C</span>
